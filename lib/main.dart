@@ -9,7 +9,7 @@ void main() {
   );
 }
 
-// Routing을 할 때, BuildContext가 필요하기 때문에 아래와 같이 MaterialApp 구현
+// Routing을 할 때, BuildContext가 필요하기 때문에 아래와 같이 MaterialApp을 구현
 class _App extends StatelessWidget {
   const _App({Key? key}) : super(key: key);
 
