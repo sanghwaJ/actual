@@ -1,4 +1,6 @@
 import 'package:actual/restaurant/component/restaurant_card.dart';
+import 'package:actual/restaurant/model/restaurant_model.dart';
+import 'package:actual/restaurant/view/restaurant_detail_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -33,28 +35,31 @@ class RestaurantScreen extends StatelessWidget {
             future: paginateRestaurant(),
             builder: (context, AsyncSnapshot<List> snapshot) {
               if (!snapshot.hasData) {
-                return Container();
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
               }
 
               return ListView.separated(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (_, index) {
                   final item = snapshot.data![index];
+                  // parsedItem
+                  final pItem = RestaurantModel.fromJson(json: item);
 
-                  return RestaurantCard(
-                    // Image.network() => 이미지를 url로 받을 떄 사용
-                    image: Image.network(
-                      'http://$ip${item['thumbUrl']}',
-                      // BoxFit.cover => 이미지가 전체를 차지하도록 지정
-                      fit: BoxFit.cover,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => RestaurantDetailScreen(
+                            id: pItem.id,
+                          ),
+                        ),
+                      );
+                    },
+                    child: RestaurantCard.fromModel(
+                      model: pItem,
                     ),
-                    name: item['name'],
-                    // List<dynamic> => List<String> 변환
-                    tags: List<String>.from(item['tags']),
-                    ratingsCount: item['ratingsCount'],
-                    deliveryTime: item['deliveryTime'],
-                    deliveryFee: item['deliveryFee'],
-                    ratings: item['ratings'],
                   );
                 },
                 // ListView 사이 사이 실행되는 함수
