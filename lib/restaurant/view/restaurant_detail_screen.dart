@@ -34,25 +34,25 @@ class RestaurantDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: getRestaurantDetail(),
-      builder: (_, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-        if (!snapshot.hasData) {
-          return DefaultLayout(
-            title: '',
-            child: Center(
+    return DefaultLayout(
+      /**
+       * 아래 타이틀 수정 필요
+       */
+      title: '불타는 떡볶이',
+      child: FutureBuilder<Map<String, dynamic>>(
+        future: getRestaurantDetail(),
+        builder: (_, AsyncSnapshot<Map<String, dynamic>> snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
               child: CircularProgressIndicator(),
-            ),
+            );
+          }
+
+          final item = RestaurantDetailModel.fromJson(
+            json: snapshot.data!,
           );
-        }
 
-        final item = RestaurantDetailModel.fromJson(
-          json: snapshot.data!,
-        );
-
-        return DefaultLayout(
-          title: item.name,
-          child: CustomScrollView(
+          return CustomScrollView(
             slivers: [
               renderTop(
                 model: item,
@@ -62,9 +62,9 @@ class RestaurantDetailScreen extends StatelessWidget {
                 products: item.products,
               ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
