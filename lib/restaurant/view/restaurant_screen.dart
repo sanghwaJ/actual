@@ -6,28 +6,24 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/const/data.dart';
+import '../repository/restaurant_repository.dart';
 
 class RestaurantScreen extends StatelessWidget {
   const RestaurantScreen({Key? key}) : super(key: key);
 
   // async로 받기 때문에 Future 선언
-  Future<List> paginateRestaurant() async {
+  Future<List<RestaurantModel>> paginateRestaurant() async {
     final dio = Dio();
 
     dio.interceptors.add(
       CustomInterceptor(storage: storage),
     );
 
-    final accessToken = await storage.read(key: ACCESS_TOKEN_KEY);
+    final resp =
+        await RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant')
+            .paginate();
 
-    final resp = await dio.get(
-      'http://$ip/restaurant',
-      options: Options(
-        headers: {'authorization': 'Bearer $accessToken'},
-      ),
-    );
-
-    return resp.data['data'];
+    return resp.data;
   }
 
   @override
@@ -36,9 +32,9 @@ class RestaurantScreen extends StatelessWidget {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: FutureBuilder<List>(
+          child: FutureBuilder<List<RestaurantModel>>(
             future: paginateRestaurant(),
-            builder: (context, AsyncSnapshot<List> snapshot) {
+            builder: (context, AsyncSnapshot<List<RestaurantModel>> snapshot) {
               if (!snapshot.hasData) {
                 return Center(
                   child: CircularProgressIndicator(),
@@ -48,9 +44,7 @@ class RestaurantScreen extends StatelessWidget {
               return ListView.separated(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (_, index) {
-                  final item = snapshot.data![index];
-                  // parsedItem
-                  final pItem = RestaurantModel.fromJson(item);
+                  final pItem = snapshot.data![index];
 
                   return GestureDetector(
                     onTap: () {
