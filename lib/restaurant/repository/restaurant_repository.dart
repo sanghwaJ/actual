@@ -11,8 +11,11 @@ abstract class RestaurantRepository {
   factory RestaurantRepository(Dio dio, {String baseUrl}) =
       _RestaurantRepository;
 
-  // @GET('/')
-  // paginate();
+  @GET('/')
+  @Headers({
+    'accessToken' : 'true',
+  })
+  paginate();
 
   @GET('/{id}')
   @Headers({
