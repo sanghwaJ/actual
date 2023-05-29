@@ -40,7 +40,6 @@ class RestaurantScreen extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 );
               }
-
               return ListView.separated(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (_, index) {

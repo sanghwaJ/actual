@@ -32,5 +32,4 @@ class CursorPaginationMeta {
 
   factory CursorPaginationMeta.fromJson(Map<String, dynamic> json)
   => _$CursorPaginationMetaFromJson(json);
-
 }
