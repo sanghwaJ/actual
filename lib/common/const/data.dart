@@ -9,6 +9,3 @@ const REFRESH_TOKEN_KEY = 'REFRESH_TOKEN';
 final emulatorIp = '10.0.0.2:3000';
 final simulatorIp = '127.0.0.1:3000';
 final ip = Platform.isIOS ? simulatorIp : emulatorIp;
-
-// Token 저장을 위한 Secure Storage
-final storage = FlutterSecureStorage();

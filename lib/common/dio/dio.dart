@@ -1,6 +1,23 @@
 import 'package:actual/common/const/data.dart';
+import 'package:actual/common/secure_storage/secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/**
+ * provider 적용으로 어떤 screen이든, 똑같은 인스턴스의 dio를 불러올 수 있음
+ */
+final dioProvider = Provider<Dio>((ref) {
+  final dio = Dio();
+
+  final storage = ref.watch(secureStorageProvider);
+
+  dio.interceptors.add(
+    CustomInterceptor(storage: storage),
+  );
+
+  return dio;
+});
 
 class CustomInterceptor extends Interceptor {
   final FlutterSecureStorage storage;
@@ -46,7 +63,8 @@ class CustomInterceptor extends Interceptor {
    */
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    print('[RES] [${response.requestOptions.method}] ${response.requestOptions.uri}');
+    print(
+        '[RES] [${response.requestOptions.method}] ${response.requestOptions.uri}');
 
     super.onResponse(response, handler);
   }
