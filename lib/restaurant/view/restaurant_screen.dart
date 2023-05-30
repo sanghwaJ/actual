@@ -11,36 +11,76 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../common/const/data.dart';
 import '../repository/restaurant_repository.dart';
 
-class RestaurantScreen extends ConsumerWidget {
+class RestaurantScreen extends ConsumerStatefulWidget {
   const RestaurantScreen({Key? key}) : super(key: key);
 
-  // async로 받기 때문에 Future 선언
-  // Future<List<RestaurantModel>> paginateRestaurant(WidgetRef ref) async {
-  //   // common 디렉토리에서 구현한 dio (항상 같은 dio를 사용)
-  //   final dio = ref.watch(dioProvider);
-  //   final resp =
-  //       await RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant')
-  //           .paginate();
-  //   return resp.data;
-  // }
+  @override
+  ConsumerState<RestaurantScreen> createState() => _RestaurantScreenState();
+}
+
+class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
+  final ScrollController controller = ScrollController();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+
+    // controller의 상태가 변할 떄마다 scrollController 실행
+    controller.addListener(scrollController);
+  }
+
+  void scrollController() {
+    // 현재 위치가 최대 길이보다 조금 덜 되는 위치까지 왔다면, 새로운 데이터 추가 요청
+    // controller.offset => scrollController의 현재 위치
+    // controller.position.maxScrollExtent => 최대 스크롤 가능한 크기
+    if (controller.offset > controller.position.maxScrollExtent - 300) {
+      ref.read(restaurantProvider.notifier).paginate(
+            fetchMore: true,
+          );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final data = ref.watch(restaurantProvider);
 
+    // 완전 처음 로딩일 때
     if (data is CursorPaginationLoading) {
       return Center(
         child: CircularProgressIndicator(),
       );
     }
 
+    // 에러가 발생했을 때
+    if (data is CursorPaginationError) {
+      return Center(
+        child: Text(data.message),
+      );
+    }
+
+    // CursorPaginationFetchingMore와 CursorPaginationRefetch은 모두 CursorPagination의 인스턴스이기 때문에, 아래의 코드가 가능
     final cp = data as CursorPagination;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: ListView.separated(
-        itemCount: cp.data.length,
+        controller: controller,
+        itemCount: cp.data.length + 1, // 리스트를 맨 밑에 내렸을 때 로딩바 표기를 위해 +1 처리
         itemBuilder: (_, index) {
+          if (index == cp.data.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Center(
+                child: data is CursorPaginationFetchingMore
+                    ? CircularProgressIndicator()
+                    : Text('마지막 데이터입니다.'),
+              ),
+            );
+          }
+
           final pItem = cp.data[index];
 
           return GestureDetector(
