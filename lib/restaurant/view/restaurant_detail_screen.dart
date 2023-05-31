@@ -4,15 +4,18 @@ import 'package:actual/common/dio/dio.dart';
 import 'package:actual/common/layout/default_layout.dart';
 import 'package:actual/product/component/product_card.dart';
 import 'package:actual/restaurant/component/restaurant_card.dart';
+import 'package:actual/restaurant/provider/restaurant_provider.dart';
 import 'package:actual/restaurant/repository/restaurant_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletons/skeletons.dart';
 
 import '../../common/const/data.dart';
 import '../model/restaurant_detail_model.dart';
+import '../model/restaurant_model.dart';
 
-class RestaurantDetailScreen extends ConsumerWidget {
+class RestaurantDetailScreen extends ConsumerStatefulWidget {
   final String id;
 
   const RestaurantDetailScreen({
@@ -20,57 +23,83 @@ class RestaurantDetailScreen extends ConsumerWidget {
     Key? key,
   }) : super(key: key);
 
-  // Future<RestaurantDetailModel> getRestaurantDetail(WidgetRef ref) async {
-  //   // common 디렉토리에서 구현한 dio (항상 같은 dio를 사용)
-  //   // final dio = ref.watch(dioProvider);
-  //   // final repository = RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant');
-  //   // return repository.getRestaurantDetail(id: id);
-  //
-  //   return ref.watch(restaurantRepositoryProvider).getRestaurantDetail(id: id);
-  // }
+  @override
+  ConsumerState<RestaurantDetailScreen> createState() =>
+      _RestaurantDetailScreenState();
+}
+
+class _RestaurantDetailScreenState
+    extends ConsumerState<RestaurantDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // getDetail 요청이 들어가 전체적으로 새로 렌더링을 하기는 하지만, 그 전에는 메모리에 있는 이미지를 보여주어 App이 더 빠른 것처럼 보임
+    ref.read(restaurantProvider.notifier).getDetail(id: widget.id);
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final state = ref.watch(restaurantDetailProvider(widget.id));
+
+    if (state == null) {
+      return DefaultLayout(
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return DefaultLayout(
       /**
        * 아래 타이틀 수정 필요
        */
-      title: '불타는 떡볶이',
-      child: FutureBuilder<RestaurantDetailModel>(
-        future: ref.watch(restaurantRepositoryProvider).getRestaurantDetail(
-              id: id,
+      title: state.name,
+      child: CustomScrollView(
+        slivers: [
+          renderTop(
+            model: state,
+          ),
+          // 아래와 같이 if문을 통해 기존에 있는 데이터는 그대로 남겨서 보여주고, 나머지 데이터를 로딩해서 보여줌
+          if (state is! RestaurantDetailModel) renderLoading(),
+          if (state is RestaurantDetailModel) renderLabel(),
+          if (state is RestaurantDetailModel)
+            renderProduct(
+              products: state.products,
             ),
-        builder: (_, AsyncSnapshot<RestaurantDetailModel> snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(snapshot.error.toString()),
-            );
-          }
+        ],
+      ),
+    );
+  }
 
-          if (!snapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              renderTop(
-                model: snapshot.data!,
+  // skeletons 적용
+  SliverPadding renderLoading() {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(
+        vertical: 16.0,
+        horizontal: 16.0,
+      ),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate(
+          List.generate(
+            3,
+            (index) => Padding(
+              padding: const EdgeInsets.only(bottom: 32.0),
+              child: SkeletonParagraph(
+                style: SkeletonParagraphStyle(
+                  lines: 5,
+                  padding: EdgeInsets.zero,
+                ),
               ),
-              renderLabel(),
-              renderProduct(
-                products: snapshot.data!.products,
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
       ),
     );
   }
 
   SliverToBoxAdapter renderTop({
-    required RestaurantDetailModel model,
+    required RestaurantModel model,
   }) {
     // SliverToBoxAdapter => slivers에 일반 위젯을 넣을 때 사용
     return SliverToBoxAdapter(
@@ -117,87 +146,4 @@ class RestaurantDetailScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   return DefaultLayout(
-  //     title: '불타는 떡볶이',
-  //     // 서로 다른 리스트가 공존 => customScrollView 사용
-  //     child: FutureBuilder<Map<String, dynamic>>(
-  //       future: getRestaurantDetail(),
-  //       builder: (_, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-  //         if (!snapshot.hasData) {
-  //           return Center(
-  //             child: CircularProgressIndicator(),
-  //           );
-  //         }
-  //
-  //         final item = RestaurantDetailModel.fromJson(
-  //           json: snapshot.data!,
-  //         );
-  //
-  //         return CustomScrollView(
-  //           slivers: [
-  //             renderTop(
-  //               model: item,
-  //             ),
-  //             renderLabel(),
-  //             renderProduct(
-  //               products: item.products,
-  //             ),
-  //           ],
-  //         );
-  //       },
-  //     ),
-  //   );
-  // }
-  //
-  // SliverToBoxAdapter renderTop({
-  //   required RestaurantDetailModel model,
-  // }) {
-  //   // SliverToBoxAdapter => slivers에 일반 위젯을 넣을 때 사용
-  //   return SliverToBoxAdapter(
-  //     child: RestaurantCard.fromModel(
-  //       model: model,
-  //       isDetail: true,
-  //     ),
-  //   );
-  // }
-  //
-  // SliverPadding renderLabel() {
-  //   return SliverPadding(
-  //     padding: EdgeInsets.symmetric(
-  //       horizontal: 16.0,
-  //     ),
-  //     sliver: SliverToBoxAdapter(
-  //       child: Text(
-  //         '메뉴',
-  //         style: TextStyle(
-  //           fontSize: 18.0,
-  //           fontWeight: FontWeight.w500,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-  //
-  // SliverPadding renderProduct(
-  //     {required List<RestaurantProductModel> products}) {
-  //   return SliverPadding(
-  //     padding: EdgeInsets.symmetric(horizontal: 16.0),
-  //     sliver: SliverList(
-  //       delegate: SliverChildBuilderDelegate(
-  //         (context, index) {
-  //           final model = products[index];
-  //
-  //           return Padding(
-  //             padding: const EdgeInsets.only(top: 16.0),
-  //             child: ProductCard.fromModel(model: model),
-  //           );
-  //         },
-  //         childCount: products.length,
-  //       ),
-  //     ),
-  //   );
-  // }
 }

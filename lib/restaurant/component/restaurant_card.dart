@@ -22,6 +22,8 @@ class RestaurantCard extends StatelessWidget {
   final bool isDetail;
   // 상세 내용
   final String? detail;
+  // Hero 위젯 태그
+  final String? heroKey;
 
   const RestaurantCard({
     required this.image,
@@ -33,6 +35,7 @@ class RestaurantCard extends StatelessWidget {
     required this.ratings,
     this.isDetail = false,
     this.detail,
+    this.heroKey,
     Key? key,
   }) : super(key: key);
 
@@ -56,6 +59,7 @@ class RestaurantCard extends StatelessWidget {
       isDetail: isDetail,
       // is => RestaurantDetailModel이 RestaurantModel를 상속받기 때문에 사용 가능
       detail: model is RestaurantDetailModel ? model.detail : null,
+      heroKey: model.id,
     );
   }
 
@@ -63,12 +67,18 @@ class RestaurantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if(isDetail)
-          image,
-        if (!isDetail)
-          // 테두리를 둥글게 깎기
+        if (heroKey != null)
+          Hero(
+            // 전에 있던 위젯과 지금의 위젯에 공통적인 부분이 있으면(tag 값이 같으면), 자연스럽게 App이 넘어감
+            tag: ObjectKey(heroKey),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(isDetail ? 0 : 12.0),
+              child: image,
+            ),
+          ),
+        if (heroKey == null)
           ClipRRect(
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(isDetail ? 0 : 12.0),
             child: image,
           ),
         const SizedBox(

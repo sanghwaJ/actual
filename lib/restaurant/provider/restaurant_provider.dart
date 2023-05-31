@@ -5,6 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repository/restaurant_repository.dart';
 
+// family modifier => provider를 생성할 때, 변수 데이터를 받아 provider의 로직을 변경해야 하는 경우 사용
+// 반환 값은 RestaurantModel, 입력하는 값은 String
+// 이렇게하면 메모리에 있는 RestaurantModel의 값을 가져와 보여주기 때문에 상세 화면 이동 시 로딩이 필요 없음
+final restaurantDetailProvider =
+    Provider.family<RestaurantModel?, String>((ref, id) {
+  final state = ref.watch(restaurantProvider);
+
+  if (state is! CursorPagination) {
+    return null;
+  }
+
+  // firstWhere => 반복한 결과의 첫번째 요소를 반환
+  return state.data.firstWhere((element) => element.id == id);
+});
+
 final restaurantProvider =
     StateNotifierProvider<RestaurantStateNotifier, CursorPaginationBase>((ref) {
   final repository = ref.watch(restaurantRepositoryProvider);
@@ -24,7 +39,7 @@ class RestaurantStateNotifier extends StateNotifier<CursorPaginationBase> {
     paginate();
   }
 
-  paginate({
+  Future<void> paginate({
     int fetchCount = 20,
     // true => 추가로 데이터 더 가져옴, false => 새로고침 (현재 상태를 덮어씌움
     bool fetchMore = false,
@@ -41,6 +56,7 @@ class RestaurantStateNotifier extends StateNotifier<CursorPaginationBase> {
       /**
        * 바로 반환하는 상황
        */
+
       // 1) hasMore = false => 이미 로딩이 끝났으며, 데이터를 다 가져와 더 이상 paginate를 할 필요가 없음
       if (state is CursorPagination && !forceRefetch) {
         // 로딩이 끝나고 데이터를 가져오면 CursorPagination에 담겨져 옴
@@ -117,5 +133,34 @@ class RestaurantStateNotifier extends StateNotifier<CursorPaginationBase> {
     } catch (e) {
       state = CursorPaginationError(message: '데이터를 가져오지 못했습니다.');
     }
+  }
+
+  void getDetail({
+    required String id,
+  }) async {
+    // 만약 아직 데이터가 하나도 없는 상태라면(state가 CursorPagination이 아니라면) => 데이터를 가져오는 시도를 함.
+    if (state is! CursorPagination) {
+      await this.paginate();
+    }
+
+    // 데이터를 가져오려는 시도를 했음에도 데이터가 없다면(state가 CursorPagination이 아니라면) => return null
+    if (state is! CursorPagination) {
+      return;
+    }
+
+    final pState = state as CursorPagination;
+
+    final resp = await repository.getRestaurantDetail(id: id);
+
+    // pState에서 id 값에 해당되는 데이터를 restaurantDetailModel로 대체해줘야 함
+    state = pState.copyWith(
+      data: pState.data.map<RestaurantModel>((e) => e.id == id ? resp : e).toList(),
+    );
+    /**
+     * 위 코드의 동작 과정
+     * 1. [RestaurantModel(1), RestaurantModel(2), RestaurantModel(3)]
+     * 2. getDetail(2)
+     * 3. [RestaurantModel(1), RestaurantModelDetail(2), RestaurantModel(3)]
+     */
   }
 }

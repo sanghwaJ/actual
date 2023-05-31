@@ -35,6 +35,7 @@ class CursorPagination<T> extends CursorPaginationBase {
     required this.data,
   });
 
+  // null 값도 들어올 수 있도록 copyWith를 통해 재정의
   CursorPagination copyWith({
     CursorPaginationMeta? meta,
     List<T>? data,
