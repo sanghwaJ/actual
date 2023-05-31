@@ -40,7 +40,6 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final data = ref.watch(restaurantProvider);
