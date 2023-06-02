@@ -1,5 +1,6 @@
 import 'package:actual/common/dio/dio.dart';
 import 'package:actual/common/model/cursor_pagination_model.dart';
+import 'package:actual/common/utils/pagination_utils.dart';
 import 'package:actual/restaurant/component/restaurant_card.dart';
 import 'package:actual/restaurant/model/restaurant_model.dart';
 import 'package:actual/restaurant/provider/restaurant_provider.dart';
@@ -30,14 +31,12 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
   }
 
   void scrollController() {
-    // 현재 위치가 최대 길이보다 조금 덜 되는 위치까지 왔다면, 새로운 데이터 추가 요청
-    // controller.offset => scrollController의 현재 위치
-    // controller.position.maxScrollExtent => 최대 스크롤 가능한 크기
-    if (controller.offset > controller.position.maxScrollExtent - 300) {
-      ref.read(restaurantProvider.notifier).paginate(
-            fetchMore: true,
-          );
-    }
+    PaginationUtils.paginate(
+      controller: controller,
+      provider: ref.read(
+        restaurantProvider.notifier,
+      ),
+    );
   }
 
   @override

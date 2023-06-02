@@ -1,3 +1,4 @@
+import 'package:actual/common/model/model_with_id.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import '../../common/const/data.dart';
@@ -13,7 +14,7 @@ enum RestaurantPriceRange {
 }
 
 @JsonSerializable()
-class RestaurantModel {
+class RestaurantModel implements IModelWithId{
   final String id;
   final String name;
   // 생성된 .g.dart 파일은 수정하면 안되기 때문에 커스텀마이징은 아래와 같이 해야 함
