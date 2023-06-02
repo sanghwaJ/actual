@@ -2,6 +2,8 @@ import 'package:actual/common/const/colors.dart';
 import 'package:actual/restaurant/model/restaurant_detail_model.dart';
 import 'package:flutter/material.dart';
 
+import '../model/product_model.dart';
+
 class ProductCard extends StatelessWidget {
   final Image image;
   final String name;
@@ -16,7 +18,23 @@ class ProductCard extends StatelessWidget {
     Key? key,
   }) : super(key: key);
 
-  factory ProductCard.fromModel({
+  factory ProductCard.fromProductModel({
+    required ProductModel model,
+  }) {
+    return ProductCard(
+      name: model.name,
+      image: Image.network(
+        model.imgUrl,
+        width: 110,
+        height: 110,
+        fit: BoxFit.cover, // 이미지를 정사각형으로 만들어주기 위해 사용
+      ),
+      detail: model.detail,
+      price: model.price,
+    );
+  }
+
+  factory ProductCard.fromRestaurantProductModel({
     required RestaurantProductModel model,
   }) {
     return ProductCard(
@@ -25,8 +43,7 @@ class ProductCard extends StatelessWidget {
         model.imgUrl,
         width: 110,
         height: 110,
-        // 이미지를 정사각형으로 만들어주기 위해 사용
-        fit: BoxFit.cover,
+        fit: BoxFit.cover, // 이미지를 정사각형으로 만들어주기 위해 사용
       ),
       detail: model.detail,
       price: model.price,

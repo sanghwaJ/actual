@@ -11,7 +11,7 @@ class PaginationProvider<T extends IModelWithId,
     extends StateNotifier<CursorPaginationBase> {
   // 일반화한 repository
   // final IBasePaginationRepository repository;
-  // 더 발전시켜서, IBasePaginationRepository는 너무 일반화되어 있으니, U는 IBasePaginationRepository와 연관이 있는 repository다! 라고 선언
+  // 더 발전시켜서, 위에서 선언한 IBasePaginationRepository는 너무 일반화되어 있으니, U는 IBasePaginationRepository와 연관이 있는 repository다! 라고 선언
   final U repository;
 
   PaginationProvider({

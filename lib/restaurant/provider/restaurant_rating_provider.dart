@@ -8,7 +8,7 @@ import '../repository/restaurant_rating_repository.dart';
 
 final restaurantRatingProvider = StateNotifierProvider.family<
     RestaurantRatingStateNotifier, CursorPaginationBase, String>((ref, id) {
-  final repository = ref.watch(resaurantRatingRepositoryProvider(id));
+  final repository = ref.watch(restaurantRatingRepositoryProvider(id));
   final notifier = RestaurantRatingStateNotifier(repository: repository);
 
   return notifier;

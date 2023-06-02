@@ -12,7 +12,7 @@ import '../../common/model/pagination_params.dart';
 part 'restaurant_rating_repository.g.dart';
 
 // family modifier => provider를 생성할 때, 변수 데이터를 받아 provider의 로직을 변경해야 하는 경우 사용
-final resaurantRatingRepositoryProvider =
+final restaurantRatingRepositoryProvider =
     Provider.family<RestaurantRatingRepository, String>((ref, id) {
   // dio 선언
   final dio = ref.watch(dioProvider);

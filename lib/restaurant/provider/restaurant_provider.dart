@@ -5,6 +5,7 @@ import 'package:actual/restaurant/model/restaurant_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repository/restaurant_repository.dart';
+import 'package:collection/collection.dart';
 
 // family modifier => provider를 생성할 때, 변수 데이터를 받아 provider의 로직을 변경해야 하는 경우 사용
 // 반환 값은 RestaurantModel, 입력하는 값은 String
@@ -17,8 +18,9 @@ final restaurantDetailProvider =
     return null;
   }
 
-  // firstWhere => 반복한 결과의 첫번째 요소를 반환
-  return state.data.firstWhere((element) => element.id == id);
+  // firstWhere => 반복한 결과의 첫번째 요소를 반환 (만약 해당 요소가 없다면 에러를 발생시킴)
+  // firstWhereOrNull => 반복한 결과의 첫번째 요소를 반환 (만약 해당 요소가 없다면 그냥 Null 반환)
+  return state.data.firstWhereOrNull((element) => element.id == id);
 });
 
 final restaurantProvider =
@@ -54,17 +56,33 @@ class RestaurantStateNotifier
 
     final resp = await repository.getRestaurantDetail(id: id);
 
-    // pState에서 id 값에 해당되는 데이터를 restaurantDetailModel로 대체해줘야 함
-    state = pState.copyWith(
-      data: pState.data
-          .map<RestaurantModel>((e) => e.id == id ? resp : e)
-          .toList(),
-    );
-    /**
-     * 위 코드의 동작 과정
-     * 1. [RestaurantModel(1), RestaurantModel(2), RestaurantModel(3)]
-     * 2. getDetail(2)
-     * 3. [RestaurantModel(1), RestaurantModelDetail(2), RestaurantModel(3)]
-     */
+    if (pState.data.where((e) => e.id == id).isEmpty) {
+      /**
+       * id를 통해 요청한 데이터가 캐시에 존재하지 않는다면
+       * 1. [RestaurantModel(1), RestaurantModel(2), RestaurantModel(3)]
+       * 2. getDetail(10) => 데이터 없다면 에러 발생!
+       * 3. 따라서, 이를 방지하기 위해 데이터가 없을 땐 캐시에 끝에다가 데이터를 그냥 추가해줌
+       *    => [RestaurantModel(1), RestaurantModel(2), RestaurantModel(3), RestaurantModelDetail(10)]
+       */
+      state = pState.copyWith(
+        data: <RestaurantModel>[
+          ...pState.data,
+          resp,
+        ],
+      );
+    } else {
+      /**
+       * id를 통해 요청한 데이터가 캐시에 존재한다면
+       * 1. [RestaurantModel(1), RestaurantModel(2), RestaurantModel(3)]
+       * 2. getDetail(2)
+       * 3. [RestaurantModel(1), RestaurantModelDetail(2), RestaurantModel(3)]
+       */
+      // pState에서 id 값에 해당되는 데이터를 restaurantDetailModel로 대체해줘야 함
+      state = pState.copyWith(
+        data: pState.data
+            .map<RestaurantModel>((e) => e.id == id ? resp : e)
+            .toList(),
+      );
+    }
   }
 }
