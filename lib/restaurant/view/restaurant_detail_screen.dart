@@ -68,9 +68,6 @@ class _RestaurantDetailScreenState
     }
 
     return DefaultLayout(
-      /**
-       * 아래 타이틀 수정 필요
-       */
       title: state.name,
       child: CustomScrollView(
         controller: controller,
