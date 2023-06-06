@@ -1,5 +1,6 @@
 import 'package:actual/common/const/data.dart';
 import 'package:actual/common/secure_storage/secure_storage.dart';
+import 'package:actual/user/provider/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,7 +14,7 @@ final dioProvider = Provider<Dio>((ref) {
   final storage = ref.watch(secureStorageProvider);
 
   dio.interceptors.add(
-    CustomInterceptor(storage: storage),
+    CustomInterceptor(storage: storage, ref: ref),
   );
 
   return dio;
@@ -21,8 +22,11 @@ final dioProvider = Provider<Dio>((ref) {
 
 class CustomInterceptor extends Interceptor {
   final FlutterSecureStorage storage;
+  final Ref ref;
+
   CustomInterceptor({
     required this.storage,
+    required this.ref,
   });
 
   /**
@@ -126,6 +130,15 @@ class CustomInterceptor extends Interceptor {
         // 에러 없이 요청 완료
         return handler.resolve(response); // 여기서 reponse는 다시 새로 보낸 요청의 응답 값
       } on DioError catch (e) {
+        // 만일 아래와 같이 사용하면 circular dependency error 발생 (무한루프)
+        // 그 이유는 userMeProvider에서 dio를 사용하고, 여기 dio에서 userMeProvider를 사용하고 ... => 무한루프 발생
+        // ref.read(userMeProvider.notifier).logout();
+
+        // 따라서.. authProvider에서 구현한 logout 실행
+        // authProvider의 logout 함수가 실행되어야(런타임에) userMeProvider의 logout을 불러옴
+        // 반면, userMeProvider의 logout 함수를 지정하면 빌드 타임에 무한 루프가 도는 것을 알 수 있기 때문에 에러 발생
+        ref.read(authProvider.notifier).logout();
+
         // refreshToken을 통해 accessToken을 재발급 받을 수 없는 상황
         return handler.reject(e);
       }
