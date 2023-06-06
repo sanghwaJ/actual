@@ -30,7 +30,8 @@ class PaginationListView<T extends IModelWithId>
       _PaginationListViewState<T>();
 }
 
-class _PaginationListViewState<T extends IModelWithId> extends ConsumerState<PaginationListView> {
+class _PaginationListViewState<T extends IModelWithId>
+    extends ConsumerState<PaginationListView> {
   final ScrollController controller = ScrollController();
 
   @override
@@ -98,40 +99,50 @@ class _PaginationListViewState<T extends IModelWithId> extends ConsumerState<Pag
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: ListView.separated(
-        controller: controller,
-        // 리스트를 맨 밑에 내렸을 때 로딩바 표기를 위해 +1 처리
-        itemCount: cp.data.length + 1,
-        itemBuilder: (_, index) {
-          if (index == cp.data.length) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Center(
-                child: cp is CursorPaginationFetchingMore
-                    ? CircularProgressIndicator()
-                    : Text('마지막 데이터입니다.'),
-              ),
+      child: RefreshIndicator(
+        onRefresh: () async {
+          ref.read(widget.provider.notifier).paginate(
+                // refetch 할 때, 로딩 화면을 안보이게 하려면 아래를 주석 처리
+                forceRefetch: true,
+              );
+        },
+        child: ListView.separated(
+          // iOS는 화면을 넘어가야지만 스크롤이 가능한데, 무시하고 무조건 스크롤이 가능하게 하려면 아래의 옵션을 줌
+          physics: AlwaysScrollableScrollPhysics(),
+          controller: controller,
+          // 리스트를 맨 밑에 내렸을 때 로딩바 표기를 위해 +1 처리
+          itemCount: cp.data.length + 1,
+          itemBuilder: (_, index) {
+            if (index == cp.data.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: Center(
+                  child: cp is CursorPaginationFetchingMore
+                      ? CircularProgressIndicator()
+                      : Text('마지막 데이터입니다.'),
+                ),
+              );
+            }
+
+            final pItem = cp.data[index];
+
+            return widget.itemBuilder(
+              context,
+              index,
+              pItem,
             );
-          }
-
-          final pItem = cp.data[index];
-
-          return widget.itemBuilder(
-            context,
-            index,
-            pItem,
-          );
-        },
-        // ListView 사이 사이 실행되는 함수
-        // separatorBuilder도 위와 같이 외부에서 값을 받아서 컨트롤 할 수 있음
-        separatorBuilder: (_, index) {
-          return SizedBox(
-            height: 16.0,
-          );
-        },
+          },
+          // ListView 사이 사이 실행되는 함수
+          // separatorBuilder도 위와 같이 외부에서 값을 받아서 컨트롤 할 수 있음
+          separatorBuilder: (_, index) {
+            return SizedBox(
+              height: 16.0,
+            );
+          },
+        ),
       ),
     );
   }

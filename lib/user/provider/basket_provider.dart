@@ -2,18 +2,42 @@ import 'dart:math';
 
 import 'package:actual/product/model/product_model.dart';
 import 'package:actual/user/model/basket_item_model.dart';
+import 'package:actual/user/model/patch_basket_body.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
+
+import '../repository/user_me_repository.dart';
 
 final basketProvider =
     StateNotifierProvider<BasketProvider, List<BasketItemModel>>(
   (ref) {
-    return BasketProvider();
+    final repository = ref.watch(userMeRepositoryProvider);
+
+    return BasketProvider(
+      repository: repository,
+    );
   },
 );
 
 class BasketProvider extends StateNotifier<List<BasketItemModel>> {
-  BasketProvider() : super([]);
+  final UserMeRepository repository;
+
+  BasketProvider({
+    required this.repository,
+  }) : super([]);
+
+  Future<void> patchBasket() async {
+    await repository.patchBasket(
+      body: PatchBasketBody(
+        basket: state.map(
+              (e) => PatchBasketBodyBasket(
+            productId: e.product.id,
+            count: e.count,
+          ),
+        ).toList(),
+      ),
+    );
+  }
 
   Future<void> addToBasket({
     required ProductModel product,
@@ -42,6 +66,9 @@ class BasketProvider extends StateNotifier<List<BasketItemModel>> {
         ),
       ];
     }
+
+    // Optimistic Response => 응답이 성공할 것이라고 가정하고 상태(캐시)를 먼저 업데이트 하는 것 (App이 더 빠른 것 같은 효과를 줌)
+    await patchBasket();
   }
 
   Future<void> removeFromBasket({
@@ -78,5 +105,8 @@ class BasketProvider extends StateNotifier<List<BasketItemModel>> {
           )
           .toList();
     }
+
+    // Optimistic Response => 응답이 성공할 것이라고 가정하고 상태(캐시)를 먼저 업데이트 하는 것 (App이 더 빠른 것 같은 효과를 줌)
+    await patchBasket();
   }
 }
