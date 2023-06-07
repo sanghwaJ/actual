@@ -1,9 +1,25 @@
 import 'package:actual/common/model/cursor_pagination_model.dart';
 import 'package:actual/common/model/model_with_id.dart';
+import 'package:debounce_throttle/debounce_throttle.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../model/pagination_params.dart';
 import '../repository/base_pagination_repository.dart';
+
+// paginationThrottle.setValue는 하나의 인자만 전달할 수 있기 때문에, 페이징 시 필요한 변수들을 클래스화
+class _PaginationInfo {
+  final int fetchCount;
+  // true => 추가로 데이터 더 가져옴, false => 새로고침 (현재 상태를 덮어씌움
+  final bool fetchMore;
+  // true => 강제로 다시 로딩 (CursorPaginationLoading())
+  final bool forceRefetch;
+
+  _PaginationInfo({
+    this.fetchCount = 20,
+    this.fetchMore = false,
+    this.forceRefetch = false,
+  });
+}
 
 // Generic 안에서는 implement를 사용할 수 없기 때문에, 의미는 implement이지만 extends로 대체함
 class PaginationProvider<T extends IModelWithId,
@@ -13,21 +29,48 @@ class PaginationProvider<T extends IModelWithId,
   // final IBasePaginationRepository repository;
   // 더 발전시켜서, 위에서 선언한 IBasePaginationRepository는 너무 일반화되어 있으니, U는 IBasePaginationRepository와 연관이 있는 repository다! 라고 선언
   final U repository;
+  // 페이징된 리스트 데이터 요청 시, 중복 요청 방지를 위해 throttle 적용
+  final paginationThrottle = Throttle(
+    Duration(seconds: 3),
+    initialValue: _PaginationInfo(),
+    checkEquality:
+        false, // true => 함수의 실행 값이 같으면 실행 하지 않음 / false => 함수의 실행 값이 같아도 실행
+  );
 
   PaginationProvider({
     required this.repository,
   }) : super(CursorPaginationLoading()) {
     // PaginationProvider를 extends하는 모든 provider는 실행 순간, 바로 paginate를 실행함
     paginate();
+
+    // 맨 처음에는 state에 initialValue가 들어가고, 그 다음에는 setValue의 값이 들어감
+    // paginationThrottle에 실행 값이 들어오면
+    paginationThrottle.values.listen((state) {
+      // paginate가 실행되고, listener 실행
+      // paginationThrottle.setValue를 통해 _PaginationInfo 셋팅, _throttledPagination 실행
+      _throttledPagination(state);
+    });
   }
 
   Future<void> paginate({
     int fetchCount = 20,
-    // true => 추가로 데이터 더 가져옴, false => 새로고침 (현재 상태를 덮어씌움
     bool fetchMore = false,
-    // true => 강제로 다시 로딩 (CursorPaginationLoading())
     bool forceRefetch = false,
   }) async {
+    paginationThrottle.setValue(
+      _PaginationInfo(
+        fetchCount: fetchCount,
+        fetchMore: fetchMore,
+        forceRefetch: forceRefetch,
+      ),
+    );
+  }
+
+  _throttledPagination(_PaginationInfo info) async {
+    final fetchCount = info.fetchCount;
+    final fetchMore = info.fetchMore;
+    final forceRefetch = info.forceRefetch;
+
     try {
       // state 상태 1 => CursorPagination, 정상적으로 데이터가 있는 상태
       // state 상태 2 => CursorPaginationLoading, 데이터가 로딩중인 상태 (현재 캐시 없음)
